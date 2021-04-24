@@ -1,90 +1,72 @@
-
-import {Message, Validation} from "./validation/validation";
-import {CreateUserDto} from "./usersDto/create-user.dto";
-import {Body, HttpStatus, Injectable, NotFoundException, Res} from "@nestjs/common";
-import {User} from "./schemas/user.schema";
+import { Message, Validation } from './validation/validation';
+import { CreateUserDto } from './usersDto/create-user.dto';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { User } from './schemas/user.schema';
 import * as bcrypt from 'bcrypt';
-import * as mongoose from "mongoose";
-import {UpdateUserDto} from "./usersDto/update-user.dto";
-
-
-
+import * as mongoose from 'mongoose';
+import { UpdateUserDto } from './usersDto/update-user.dto';
 
 @Injectable()
-export class UsersService extends Validation{
-
-
-    async create(res,userDto:CreateUserDto):Promise<void>{
-        const validResult:Message = await this.checkUniqueForCreate(userDto.userName,userDto.email,userDto.phone)
-        if(validResult.result==false){
-            res.status(HttpStatus.BAD_REQUEST).send(validResult.message)
-        }else {
-            const hushedPassword:string= await bcrypt.hash(userDto.password,10)
-            userDto.password=hushedPassword
-            const newUser= new this.userModel(userDto)
-            await newUser.save()
-            res.status(HttpStatus.CREATED).send(validResult.message)
-        }
+export class UsersService extends Validation {
+  async create(userDto: CreateUserDto): Promise<string> {
+    const validResult: Message = await this.checkUniqueForCreate(
+      userDto.userName,
+      userDto.email,
+      userDto.phone,
+    );
+    if (!validResult.result) {
+      throw new HttpException(validResult.message, HttpStatus.BAD_REQUEST);
     }
+    const hashedPassword: string = await bcrypt.hash(userDto.password, 10);
+    userDto.password = hashedPassword;
+    const newUser = new this.userModel(userDto);
+    await newUser.save();
+    return validResult.message;
+  }
 
-
-
-    async getAll(res):Promise<void>{
-        const users:User[]= await this.userModel.find().exec()
-        if(users[0]) {
-           res.status(HttpStatus.OK).send(users)
-        }
-        res.status(HttpStatus.BAD_REQUEST).send("bad request")
+  async getAll(): Promise<User[]> {
+    const users: User[] = await this.userModel.find().exec();
+    if (users[0]) {
+      return users;
     }
+    throw new HttpException('bad request', HttpStatus.BAD_REQUEST);
+  }
 
-
-
-    async getById(res,id:string):Promise<void>{
-        const check:boolean=mongoose.Types.ObjectId.isValid(id)
-        if(check===true) {
-            const user:User = await this.userModel.findById(id)
-            if(user){
-                res.status(HttpStatus.OK).send(user)
-            }else{
-                res.status(HttpStatus.BAD_REQUEST).send("Check entered ID")
-            }
-        }
-        res.status(HttpStatus.BAD_REQUEST).send("entered ID unValid")
+  async getById(id: string): Promise<User> {
+    const check: boolean = mongoose.Types.ObjectId.isValid(id);
+    if (check) {
+      const user: User = await this.userModel.findById(id);
+      return user;
     }
+    throw new HttpException('entered ID unValid', HttpStatus.BAD_REQUEST);
+  }
 
-
-    async updateUser (res,id:string,updateUserDto:UpdateUserDto):Promise<void>{
-        const check:boolean= mongoose.Types.ObjectId.isValid(id)
-        if(check===true) {
-            const user:User = await this.userModel.findById(id)
-            if(user){
-                const validResult:Message = await this.checkUniqueForUpdate(user,updateUserDto.userName,updateUserDto.email,updateUserDto.phone)
-                if(validResult.result===true){
-                    mongoose.set('useFindAndModify', false)
-                    await this.userModel.findByIdAndUpdate(id,updateUserDto)
-                    res.status(HttpStatus.ACCEPTED).send(validResult.message)
-                }
-                res.status(HttpStatus.BAD_REQUEST).send(validResult.message)
-            }else{
-                res.status(HttpStatus.BAD_REQUEST).send("Check entered ID")
-
-            }
+  async updateUser(id: string, updateUserDto: UpdateUserDto): Promise<string> {
+    console.log(updateUserDto);
+    const check: boolean = mongoose.Types.ObjectId.isValid(id);
+    if (check) {
+      const user: User = await this.userModel.findById(id);
+      const validResult: Message = await this.checkForUpdate(user, updateUserDto);
+      if (validResult.result) {
+        if(updateUserDto.password){
+          const hashedPassword: string = await bcrypt.hash(updateUserDto.password, 10);
+          updateUserDto.password = hashedPassword;
         }
-        res.status(HttpStatus.BAD_REQUEST).send("entered ID unValid")
-
+        mongoose.set('useFindAndModify', false);
+        await this.userModel.findByIdAndUpdate(id, updateUserDto);
+        return validResult.message;
+      }
+      throw new HttpException(validResult.message, HttpStatus.BAD_REQUEST);
     }
+    throw new HttpException('entered ID unValid', HttpStatus.BAD_REQUEST);
+  }
 
-
-    async deleteUser(res,id:string):Promise<void>{
-        const check:boolean=mongoose.Types.ObjectId.isValid(id)
-        if(check===true) {
-            const user:User = await this.userModel.findById(id)
-            if(user) {
-                await this.userModel.findByIdAndDelete(id)
-                res.status(HttpStatus.ACCEPTED).send("user deleted")
-            }
-            res.status(HttpStatus.BAD_REQUEST).send("Check entered ID")
-        }
-        res.status(HttpStatus.BAD_REQUEST).send("entered ID unValid")
+  async deleteUser(id: string): Promise<string> {
+    const check: boolean = mongoose.Types.ObjectId.isValid(id);
+    if (check) {
+      await this.userModel.findByIdAndDelete(id);
+      return 'user deleted';
     }
+    throw new HttpException('entered ID unValid', HttpStatus.BAD_REQUEST);
+  }
 }

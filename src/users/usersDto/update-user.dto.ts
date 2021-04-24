@@ -1,19 +1,5 @@
-import {IsEmail, IsPhoneNumber, Length} from "class-validator";
+import { PartialType } from '@nestjs/mapped-types';
+import { CreateUserDto } from './create-user.dto';
 
-export class UpdateUserDto {
+export class UpdateUserDto extends PartialType(CreateUserDto) {};
 
-    @Length(3,30,{message:"name must be 3-30"})
-     readonly name:string
-
-    @Length(3,15, {message:"userName must be 5-15"})
-    readonly userName:string
-
-    @IsEmail()
-    readonly email:string
-
-    @IsPhoneNumber("AM",{message:"phone must be phone number"})
-    readonly phone:number
-
-    @Length(8,20,{message:"password must be 8-20"})
-    readonly password:string
-}
