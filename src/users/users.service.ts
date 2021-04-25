@@ -17,8 +17,7 @@ export class UsersService extends Validation {
     if (!validResult.result) {
       throw new HttpException(validResult.message, HttpStatus.BAD_REQUEST);
     }
-    const hashedPassword: string = await bcrypt.hash(userDto.password, 10);
-    userDto.password = hashedPassword;
+    userDto.password = await bcrypt.hash(userDto.password, 10);
     const newUser = new this.userModel(userDto);
     await newUser.save();
     return validResult.message;
@@ -35,22 +34,25 @@ export class UsersService extends Validation {
   async getById(id: string): Promise<User> {
     const check: boolean = mongoose.Types.ObjectId.isValid(id);
     if (check) {
-      const user: User = await this.userModel.findById(id);
-      return user;
+      return this.userModel.findById(id);
     }
     throw new HttpException('entered ID unValid', HttpStatus.BAD_REQUEST);
   }
 
   async updateUser(id: string, updateUserDto: UpdateUserDto): Promise<string> {
-    console.log(updateUserDto);
     const check: boolean = mongoose.Types.ObjectId.isValid(id);
     if (check) {
       const user: User = await this.userModel.findById(id);
-      const validResult: Message = await this.checkForUpdate(user, updateUserDto);
+      const validResult: Message = await this.checkForUpdate(
+        user,
+        updateUserDto,
+      );
       if (validResult.result) {
-        if(updateUserDto.password){
-          const hashedPassword: string = await bcrypt.hash(updateUserDto.password, 10);
-          updateUserDto.password = hashedPassword;
+        if (updateUserDto.password) {
+          updateUserDto.password = await bcrypt.hash(
+            updateUserDto.password,
+            10,
+          );
         }
         mongoose.set('useFindAndModify', false);
         await this.userModel.findByIdAndUpdate(id, updateUserDto);

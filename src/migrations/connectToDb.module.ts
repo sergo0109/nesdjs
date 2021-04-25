@@ -1,7 +1,11 @@
-import {Module} from "@nestjs/common";
-import {MongooseModule} from "@nestjs/mongoose";
+import { Module } from '@nestjs/common';
+import { MongooseModule } from '@nestjs/mongoose';
 
 @Module({
-    imports:[MongooseModule.forRoot('mongodb://localhost/nest',{ useNewUrlParser: true })]
+  imports: [
+    MongooseModule.forRoot('mongodb://localhost/nest', {
+      useNewUrlParser: true,
+    }),
+  ],
 })
-export class ConnectToDbModule{}
+export class ConnectToDbModule {}

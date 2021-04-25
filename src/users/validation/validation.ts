@@ -52,20 +52,17 @@ export class Validation {
     return message;
   }
 
-  async checkForUpdate(
-    user: User,
-    updateDto:UpdateUserDto,
-  ): Promise<Message> {
+  async checkForUpdate(user: User, updateDto: UpdateUserDto): Promise<Message> {
     const message: Message = {
       message: 'Updated',
       result: true,
     };
-    if(updateDto.DOB){
+    if (updateDto.DOB) {
       message.message = 'Changing DOB is impossible';
       message.result = false;
     }
-    if(updateDto.userName){
-      if(message.result){
+    if (updateDto.userName) {
+      if (message.result) {
         message.message = 'Changing userName is impossible';
         message.result = false;
       } else {
@@ -82,7 +79,9 @@ export class Validation {
       }
     }
     if (updateDto.email && updateDto.email != user.email) {
-      const user_email: User = await this.userModel.findOne({ email: updateDto.email });
+      const user_email: User = await this.userModel.findOne({
+        email: updateDto.email,
+      });
       if (user_email) {
         if (message.message !== 'Updated') {
           message.message = 'email' + message.message;
@@ -93,7 +92,9 @@ export class Validation {
       }
     }
     if (updateDto.phone && updateDto.phone != user.phone) {
-      const user_phone: User = await this.userModel.findOne({ phone: updateDto.phone });
+      const user_phone: User = await this.userModel.findOne({
+        phone: updateDto.phone,
+      });
       if (user_phone) {
         if (message.message !== 'Updated') {
           message.message = 'phone ' + message.message;
